@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="use_kinect" default="true"/>
+    <arg name="world_name" default="$(find rcprg_gazebo_utils)/data/gazebo/worlds/blank.world" />
+    <arg name="GAZEBO_MODEL_PATH" default=""/>
+    <arg name="GAZEBO_RESOURCE_PATH" default=""/>
+    <arg name="profile" default="dart_2ms"/>
+
+    <arg name="state_snapshot" default="$(find velma_sim_gazebo)/config/initial_state.txt" />
+    <arg name="spawn_velma" default="true"/>
+
+	<include file="$(find velma_common)/launch/velma_system.launch">
+      <arg name="world_name" value="$(arg world_name)"/> <!-- Note: the world_name is with respect to GAZEBO_RESOURCE_PATH environmental variable -->
+      <arg name="use_kinect" default="$(arg use_kinect)"/>
+      <arg name="GAZEBO_MODEL_PATH" value="$(arg GAZEBO_MODEL_PATH):$(find rcprg_gazebo_utils)/data/gazebo/models:$(find stero_velma)/data/gazebo/models"/>
+      <arg name="GAZEBO_RESOURCE_PATH" value="$(arg GAZEBO_RESOURCE_PATH):$(find rcprg_gazebo_utils)/data/gazebo:$(find stero_velma)/data/gazebo"/>
+      <arg name="profile" value="$(arg profile)"/>
+      <arg name="state_snapshot" value="$(arg state_snapshot)" />
+      <arg name="spawn_velma" value="$(arg spawn_velma)" />
+    </include>
+</launch>
+

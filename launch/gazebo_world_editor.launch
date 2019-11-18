@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="world_name" default="worlds/blank.world"/> <!-- Note: the world_name is with respect to GAZEBO_RESOURCE_PATH environmental variable -->
+
+  <include file="$(find rcprg_gazebo_utils)/launch/gazebo_world_editor.launch">
+    <arg name="world_name" value="$(arg world_name)"/> <!-- Note: the world_name is with respect to GAZEBO_RESOURCE_PATH environmental variable -->
+    <arg name="GAZEBO_MODEL_PATH" value="$(find stero_velma)/data/gazebo/models"/>
+    <arg name="GAZEBO_RESOURCE_PATH" value="$(find stero_velma)/data/gazebo"/>
+  </include>
+</launch>

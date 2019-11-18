@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="GAZEBO_MODEL_PATH" default=""/>
+  <arg name="GAZEBO_RESOURCE_PATH" default=""/>
+
+  <include file="$(find rcprg_gazebo_utils)/launch/gazebo_client.launch">
+    <arg name="GAZEBO_MODEL_PATH" value="$(find stero_velma)/data/gazebo/models"/>
+    <arg name="GAZEBO_RESOURCE_PATH" value="$(find stero_velma)/data/gazebo"/>
+  </include>
+</launch>
