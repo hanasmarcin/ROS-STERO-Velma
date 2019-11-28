@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+
+  <include file="$(find rcprg_gazebo_utils)/launch/gazebo_publish_ros_tf_object.launch" >
+      <arg name="link_name" value="jar::link" />
+      <arg name="frame_id" value="object1" />
+  </include>
+  <include file="$(find rcprg_gazebo_utils)/launch/gazebo_publish_ros_tf_object.launch" >
+      <arg name="link_name" value="table::link" />
+      <arg name="frame_id" value="table1" />
+  </include>
+  <include file="$(find rcprg_gazebo_utils)/launch/gazebo_publish_ros_tf_object.launch" >
+      <arg name="link_name" value="bookshelf::link" />
+      <arg name="frame_id" value="table2" />
+  </include>
+</launch>
+
