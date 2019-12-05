@@ -19,16 +19,16 @@ y = 0
 x = 0.5
 y = -0.4
 z = 1
+T_B_Trd = []
 
-if __name__ == "__main__":
-    rospy.init_node('lab1_1')
-    rospy.sleep(0.5)
-
+def calculate_tfs():
+    '''
+    Function calculates trajectory
+    '''
     tf_list = []
     for alpha in numpy.arange(0, 2*math.pi, 2*math.pi/40):
 	tf_list.append(PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, 0), PyKDL.Vector(R*math.cos(alpha) ,R*math.sin(alpha) ,0)))
 
-    T_B_Trd = []
     base_tf = PyKDL.Frame(PyKDL.Rotation.RPY(r, p, y), PyKDL.Vector(x, y, z))
     for frame in tf_list:
 	T_B_Trd.append(base_tf*frame)
@@ -36,22 +36,12 @@ if __name__ == "__main__":
     for frame in T_B_Trd:
 	frame.M = PyKDL.Rotation.Quaternion( 0.0 , 0.0 , 0.0 , 1.0 )
 
-    #br = tf.TransformBroadcaster()
-    #rospy.sleep(1)
-    #while not rospy.is_shutdown():
-    #    for frame in T_B_Trd:
-    #        br.sendTransform((frame.p.x(), frame.p.y(), frame.p.z()),
-    #                 frame.M.GetQuaternion(),
-    #                 rospy.Time.now(),
-    #                 "kolo",
-    #                 "world")
-    #        rospy.sleep(0.2)
-    #exitError(0)
 
-    
-    rospy.sleep(0.5)
-    #exitError(0)
-
+def initialize_robot():
+    '''
+    Function initializes robot in cart_imp mode
+    '''
+    global velma
     velma = VelmaInterface()
     if not velma.waitForInit(timeout_s=10.0):
         print "Could not initialize VelmaInterface\n"
@@ -68,31 +58,30 @@ if __name__ == "__main__":
         exitError(8)
     if velma.waitForEffectorRight() != 0:
         exitError(9)
- 
-    rospy.sleep(0.5)
- 
+
     diag = velma.getCoreCsDiag()
     if not diag.inStateCartImp():
         print "The core_cs should be in cart_imp state, but it is not"
         exitError(3)
+
+
+if __name__ == "__main__":
+    rospy.init_node('lab1_1')
+    rospy.sleep(0.5)
     
+    calculate_tfs()
+    rospy.sleep(0.5)
 
-
+    initialize_robot()
+    rospy.sleep(0.5)
+    
     print "Moving right wrist to pose defined in world frame..."
     print type(T_B_Trd[0])
-    #T_B_Trd = PyKDL.Frame(PyKDL.Rotation.Quaternion( 0.0 , 0.0 , 0.0 , 1.0 ), PyKDL.Vector(T_B_Trd[0].p.x(), T_B_Trd[0].p.y(), T_B_Trd[0].p.z()))
-    #print type(T_B_Trd)
+    
+    # Moving robot on given trajectory
     if not velma.moveCartImpRight(T_B_Trd, [0.3*t[0]+2 for t in enumerate(T_B_Trd)], None, None, None, None, PyKDL.Wrench(PyKDL.Vector(5,5,5), PyKDL.Vector(5,5,5)), start_time=0.5):
         exitError(8)
-    #if not velma.moveCartImpRight(T_B_Trd, [2*t[0] for t in enumerate(T_B_Trd)], None, None, None, None, PyKDL.Wrench(PyKDL.Vector(5,5,5), PyKDL.Vector(5,5,5)), start_time=0.5):
-    #    exitError(8)
+
     if velma.waitForEffectorRight() != 0:
         exitError(9)
     rospy.sleep(0.5)
-    #print "calculating difference between desiread and reached pose..."
-    #T_B_T_diff = PyKDL.diff(T_B_Trd, velma.getTf("B", "Tr"), 1.0)
-    #print T_B_T_diff
-    #if T_B_T_diff.vel.Norm() > 0.05 or T_B_T_diff.rot.Norm() > 0.05:
-    #    exitError(10)
-
-    print "hello world!"
