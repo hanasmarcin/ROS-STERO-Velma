@@ -20,24 +20,24 @@ if __name__ == "__main__":
     #Tf_table1 = velma.getTf("B", "table1")
     #Tf_table2 = velma.getTf("B", "table2")
 
-    # define some configurations
+     # define some configurations
     q_map_starting = {'torso_0_joint':0,
-        'right_arm_0_joint':-0.3,   'left_arm_0_joint':0.3,
-        'right_arm_1_joint':-1.8,   'left_arm_1_joint':1.8,
-        'right_arm_2_joint':1.25,   'left_arm_2_joint':-1.25,
-        'right_arm_3_joint':0.85,   'left_arm_3_joint':-0.85,
-        'right_arm_4_joint':0,      'left_arm_4_joint':0,
-        'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
-        'right_arm_6_joint':0,      'left_arm_6_joint':0 }
+         'right_arm_0_joint':-0.3,   'left_arm_0_joint':0.3,
+         'right_arm_1_joint':-1.8,   'left_arm_1_joint':1.8,
+         'right_arm_2_joint':1.25,   'left_arm_2_joint':-1.25,
+         'right_arm_3_joint':0.85,   'left_arm_3_joint':-0.85,
+         'right_arm_4_joint':0,      'left_arm_4_joint':0,
+         'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
+         'right_arm_6_joint':0,      'left_arm_6_joint':0 }
  
     q_map_1 = {'torso_0_joint':0.0,
-        'right_arm_0_joint':-0.3,   'left_arm_0_joint':0.3,
-        'right_arm_1_joint':-1.57,  'left_arm_1_joint':1.57,
-        'right_arm_2_joint':1.57,   'left_arm_2_joint':-1.57,
-        'right_arm_3_joint':1.57,   'left_arm_3_joint':-1.7,
-        'right_arm_4_joint':0.0,    'left_arm_4_joint':0.0,
-        'right_arm_5_joint':-1.57,  'left_arm_5_joint':1.57,
-        'right_arm_6_joint':0.0,    'left_arm_6_joint':0.0 }
+         'right_arm_0_joint':-0.3,   'left_arm_0_joint':0.3,
+         'right_arm_1_joint':-1.57,  'left_arm_1_joint':1.57,
+         'right_arm_2_joint':1.57,   'left_arm_2_joint':-1.57,
+         'right_arm_3_joint':1.57,   'left_arm_3_joint':-1.7,
+         'right_arm_4_joint':0.0,    'left_arm_4_joint':0.0,
+         'right_arm_5_joint':-1.57,  'left_arm_5_joint':1.57,
+         'right_arm_6_joint':0.0,    'left_arm_6_joint':0.0 }
  
     rospy.sleep(0.5)
  
@@ -62,10 +62,6 @@ if __name__ == "__main__":
     if not p.waitForInit():
         print "could not initialize PLanner"
         exitError(2)
-    ocl = OctomapListener("/octomap_binary")
-    rospy.sleep(0.5)
-    octomap = ocl.getOctomap(timeout_s=5.0)
-    p.processWorld(octomap)
     print "Planner init ok"
  
     # define a function for frequently used routine in this test
@@ -92,7 +88,8 @@ if __name__ == "__main__":
         js = velma.getLastJointState()
         if not isConfigurationClose(q_dest, js[1]):
             exitError(6)
-  
+ 
+ 
     if velma.enableMotors() != 0:
         exitError(14)
  
@@ -159,7 +156,16 @@ if __name__ == "__main__":
     print T_B_T_diff
     if T_B_T_diff.vel.Norm() > 0.05 or T_B_T_diff.rot.Norm() > 0.05:
         exitError(10)
-
+ 
+ 
+    print "Rotating right writs by 30 deg around local z axis (right-hand side matrix multiplication)"
+    T_B_Tr = velma.getTf("B", "Tr")
+    T_B_Trd = T_B_Tr * PyKDL.Frame(PyKDL.Rotation.RotZ(30.0/180.0*math.pi))
+    if not velma.moveCartImpRight([T_B_Trd], [2.0], None, None, None, None, PyKDL.Wrench(PyKDL.Vector(5,5,5), PyKDL.Vector(5,5,5)), start_time=0.5):
+        exitError(8)
+    if velma.waitForEffectorRight() != 0:
+        exitError(9)
+    rospy.sleep(0.5)
     exitError(0)
  
 
