@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+
+  <include file="$(find rcprg_gazebo_utils)/launch/gazebo_publish_ros_tf_object.launch" >
+      <arg name="link_name" value="cabinet_door::cabinet" />
+      <arg name="frame_id" value="cabinet" />
+  </include>
+  <include file="$(find rcprg_gazebo_utils)/launch/gazebo_publish_ros_tf_object.launch" >
+      <arg name="link_name" value="table::link" />
+      <arg name="frame_id" value="table" />
+  </include>
+
+</launch>
+

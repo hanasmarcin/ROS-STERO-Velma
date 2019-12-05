@@ -19,10 +19,10 @@ y = 0
 x = 0.5
 y = -0.4
 z = 1
-q_map_goal = {'torso_0_joint':0, 'right_arm_0_joint':1.1, 'right_arm_1_joint':-1.3,
-    'right_arm_2_joint':1.45, 'right_arm_3_joint':1.4, 'right_arm_4_joint':1.1, 'right_arm_5_joint':-1.2,
-    'right_arm_6_joint':-0.5, 'left_arm_0_joint':0.3, 'left_arm_1_joint':1.8, 'left_arm_2_joint':-1.25,
-    'left_arm_3_joint':-0.85, 'left_arm_4_joint':0, 'left_arm_5_joint':0.5, 'left_arm_6_joint':0 }
+q_map_goal = {'torso_0_joint':0, 'right_arm_0_joint':-0.3, 'right_arm_1_joint':-1.8,
+    'right_arm_2_joint':1.25, 'right_arm_3_joint':0.85, 'right_arm_4_joint':0, 'right_arm_5_joint':-0.5,
+    'right_arm_6_joint':0, 'left_arm_0_joint':-0.6, 'left_arm_1_joint':1.8, 'left_arm_2_joint':-1.25,
+    'left_arm_3_joint':-2, 'left_arm_4_joint':0, 'left_arm_5_joint':0.3, 'left_arm_6_joint':0.5 }
 
 
 
@@ -107,7 +107,7 @@ def move_left_fingers(close):
     if close:
     	dest_q = [0.6*math.pi, 0.6*math.pi, 0.6*math.pi, 0]
     else:
-        dest_q = [0, 0, 0, 0]
+        dest_q = [0.5*math.pi, 0.5*math.pi, 0.5*math.pi, math.pi]
     velma.moveHandLeft(dest_q, [1,1,1,1], [2000,2000,2000,2000], 1000, hold=True)
     if velma.waitForHandLeft() != 0:
         exitError(6)
@@ -170,7 +170,9 @@ def move_right_wrist(tf_dest):
     Function moves robot's right wrist to given transform.
     '''
     print "Moving right wrist to pose defined in world frame..."
-    if not velma.moveCartImpRight([tf_dest], [3.0], None, None, None, None, PyKDL.Wrench(PyKDL.Vector(5,5,5), PyKDL.Vector(5,5,5)), start_time=0.5):
+    if not velma.moveCartImpRight([tf_dest], [3.0], None, None, None, None, PyKDL.Wrench(PyKDL.Vector(5,5,5), PyKDL.Vector(5,5,5), start_time=0.5,
+	damping = PyKDL.Wrench(PyKDL.Vector(0.1, 0.1, 1), PyKDL.Vector(0.1, 0.1, 1)), 
+        path_tol = PyKDL.Twist(PyKDL.RPY(0.2, 0.2, 0.2), PyKDL.Vector(0.5, 0.5, 0.1))):
         exitError(13)
     if velma.waitForEffectorRight() != 0:
         exitError(14)
@@ -188,14 +190,7 @@ def calculate_tf_dest(Tf_object, correction):
     '''
     Function calculates destination transform, used to pick up or put off an object.
     '''
-    tool_tf = velma.getTf("B", "Tr")
-    tool_tf.p[2] = Tf_object.p[2]
-    tf_diff = PyKDL.diff(tool_tf, Tf_object, 1.0)
-    alpha = math.atan2(tf_diff.vel[1], tf_diff.vel[0])
-    print tf_diff.vel
-    tf_diff.vel[0] -= TOOL_DIST*math.cos(alpha)
-    tf_diff.vel[1] -= TOOL_DIST*math.sin(alpha)
-    return PyKDL.Frame(PyKDL.Rotation.RPY(0.0, 0.0, alpha), tool_tf.p+tf_diff.vel+correction)
+    return PyKDL.Frame(Tf_object.M, Tf_object.p + correction)
 
 
 def calculate_base_angle(Tf_object):
@@ -220,13 +215,8 @@ if __name__ == "__main__":
     # Get object's and tables' transforms
     velma = VelmaInterface()
     velma.waitForInit()
-    Tf_object1 = velma.getTf("B", "object1")
-    Tf_table1 = velma.getTf("B", "table1")
-    Tf_table2 = velma.getTf("B", "table2")
-    translation_tf = PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, 0), PyKDL.Vector(0, -0.2, 1.19))
-    Tf_table2 = Tf_table2 * translation_tf
-    # Tf_table2.p[1] += 0.2
-    # Tf_table2.p[2] = 1.19
+    Tf_table = velma.getTf("B", "table")
+    Tf_cabinet = velma.getTf("B", "cabinet")
 
     # Initialize robot
     initialize_velma()
@@ -234,19 +224,19 @@ if __name__ == "__main__":
     switch_to_jnt_imp()
  
     # Set robot to it's starting position
-    move_left_fingers(close=True)
+    move_left_fingers(close=False)
     move_right_fingers(close=True)
-    calculate_base_angle(Tf_table1)
+    calculate_base_angle(Tf_table)
     plan_and_move(q_map_goal)
-    move_right_fingers(close=False)
+    # move_right_fingers(close=False)
     rospy.sleep(1)
 
     # Move robot's wrist to the object
     switch_to_cart_imp()
     tool_org_tf = velma.getTf("B", "Tr")
-    tf_dest = calculate_tf_dest(Tf_object1, PyKDL.Vector(0, 0, 0.1))
+    tf_dest = calculate_tf_dest(Tf_cabinet, PyKDL.Vector(0, 0, 0.7*0.6))
     move_right_wrist(tf_dest)
-
+    exitError(0)
     # Pick up the object
     move_right_fingers(close=True, check=False)
     move_right_wrist(tool_org_tf)
