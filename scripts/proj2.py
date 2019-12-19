@@ -10,20 +10,21 @@ from rcprg_planner import *
 from rcprg_ros_utils import exitError
 
 
-TOOL_DIST = 0.272
+q_map_goal = {'torso_0_joint':0, 'right_arm_0_joint':0.6, 'right_arm_1_joint':-1.8,
+    'right_arm_2_joint':1.25, 'right_arm_3_joint':1.8, 'right_arm_4_joint':0, 'right_arm_5_joint':-0.3,
+    'right_arm_6_joint':-0.5, 'left_arm_0_joint':0.3, 'left_arm_1_joint':1.8, 'left_arm_2_joint':-1.25,
+    'left_arm_3_joint':-0.85, 'left_arm_4_joint':0, 'left_arm_5_joint':0.5, 'left_arm_6_joint':0 }
 
-R = 0.05
-r = 0.3
-p = 0.4
-y = 0
-x = 0.5
-y = -0.4
-z = 1
-q_map_goal = {'torso_0_joint':0, 'right_arm_0_joint':-0.3, 'right_arm_1_joint':-1.8,
+q_map_finish = {'torso_0_joint':0, 'right_arm_0_joint':-0.3, 'right_arm_1_joint':-1.8,
     'right_arm_2_joint':1.25, 'right_arm_3_joint':0.85, 'right_arm_4_joint':0, 'right_arm_5_joint':-0.5,
-    'right_arm_6_joint':0, 'left_arm_0_joint':-0.6, 'left_arm_1_joint':1.8, 'left_arm_2_joint':-1.25,
-    'left_arm_3_joint':-2, 'left_arm_4_joint':0, 'left_arm_5_joint':0.3, 'left_arm_6_joint':0.5 }
+    'right_arm_6_joint':0, 'left_arm_0_joint':0.3, 'left_arm_1_joint':1.8, 'left_arm_2_joint':-1.25,
+    'left_arm_3_joint':-0.85, 'left_arm_4_joint':0, 'left_arm_5_joint':0.5, 'left_arm_6_joint':0 }
 
+def make_wrench(lx,ly,lz,rx,ry,rz):
+    '''
+    Function makes wrench.
+    '''
+    return PyKDL.Wrench(PyKDL.Vector(lx,ly,lz), PyKDL.Vector(rx,ry,rz))
 
 
 def initialize_velma():
@@ -100,23 +101,20 @@ def switch_to_cart_imp():
         exitError(5)
 
 
-def move_left_fingers(close):
+def move_right_fingers(angle):
     '''
     Function closes or opens left gripper by moving it's fingers.
     '''
-    if close:
-    	dest_q = [0.6*math.pi, 0.6*math.pi, 0.6*math.pi, 0]
-    else:
-        dest_q = [0.5*math.pi, 0.5*math.pi, 0.5*math.pi, math.pi]
-    velma.moveHandLeft(dest_q, [1,1,1,1], [2000,2000,2000,2000], 1000, hold=True)
-    if velma.waitForHandLeft() != 0:
+    dest_q = [angle, angle, angle, math.pi]
+    velma.moveHandRight(dest_q, [1,1,1,1], [2000,2000,2000,2000], 1000, hold=True)
+    if velma.waitForHandRight() != 0:
         exitError(6)
     rospy.sleep(0.5)
-    if not isHandConfigurationClose(velma.getHandLeftCurrentConfiguration(), dest_q):
-        exitError(7)
+    #if not isHandConfigurationClose(velma.getHandLeftCurrentConfiguration(), dest_q):
+    #    exitError(7)
 
 
-def move_right_fingers(close, check=True):
+def move_left_fingers(close, check=True):
     '''
     Function closes or opens right gripper by moving it's fingers.
     '''
@@ -124,15 +122,15 @@ def move_right_fingers(close, check=True):
     	dest_q = [0.6*math.pi, 0.6*math.pi, 0.6*math.pi, 0]
     else:
         dest_q = [0, 0, 0, 0]
-    velma.moveHandRight(dest_q, [1,1,1,1], [2000,2000,2000,2000], 1000, hold=True)
-    if velma.waitForHandRight() != 0:
+    velma.moveHandLeft(dest_q, [1,1,1,1], [2000,2000,2000,2000], 1000, hold=True)
+    if velma.waitForHandLeft() != 0:
         exitError(8)
     rospy.sleep(0.5)
     if check:
-        if not isHandConfigurationClose(velma.getHandRightCurrentConfiguration(), dest_q):
+        if not isHandConfigurationClose(velma.getHandLeftCurrentConfiguration(), dest_q):
             exitError(9)
     else:
-        if isHandConfigurationClose(velma.getHandRightCurrentConfiguration(), dest_q):
+        if isHandConfigurationClose(velma.getHandLeftCurrentConfiguration(), dest_q):
             exitError(10)
 
 
@@ -165,25 +163,110 @@ def plan_and_move(q_map_goal):
         exitError(12)
 
 
-def move_right_wrist(tf_dest):
+def set_lower_impedance():
+    '''
+    Function sets low impedance in X and Y axis.
+    '''
+    print "Set impedance to (40,40,1000,150,150,150) in tool frame."
+    imp_list = [make_wrench(1000,1000,1000,150,150,150),
+                make_wrench(500,500,1000,150,150,150),
+                make_wrench(250,250,1000,150,150,150),
+                make_wrench(40,40,1000,150,150,150)]
+    if not velma.moveCartImpRight(None, None, None, None, imp_list, [0.5,1.0,1.5,2.0], PyKDL.Wrench(PyKDL.Vector(5,5,5), PyKDL.Vector(5,5,5)), start_time=0.5):
+        exitError(16)
+    if velma.waitForEffectorRight() != 0:
+        exitError(17)
+
+
+def set_higher_impedance():
+    '''
+    Function sets high impedance in X and Y axis.
+    '''
+    print "Set impedance to (1000,1000,1000,150,150,150) in tool frame."
+    imp_list = [make_wrench(1000,1000,1000,150,150,150)]
+    if not velma.moveCartImpRight(None, None, None, None, imp_list, [2], PyKDL.Wrench(PyKDL.Vector(5,5,5), PyKDL.Vector(5,5,5)), start_time=0.5):
+        exitError(16)
+    if velma.waitForEffectorRight() != 0:
+        exitError(17)
+
+
+def calculate_trajectory(Tf_cabinet):
+    '''
+    Function calculates points of opening door trajectory on an arc.
+    '''
+    traj = []
+    wrist_traj = []
+    R = 0.282 + 0.06
+    Tf_correction = Tf_cabinet * PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, 0), PyKDL.Vector(0.4, -(R-0.05), 0.1))
+    theta = Tf_cabinet.M.GetRPY()[2]
+
+    for alpha in numpy.arange(-theta + 1.5*math.pi/4,-theta -0.5*math.pi/4 - 0.01, -0.5*math.pi/4):
+        print alpha
+        traj.append( PyKDL.Frame(Tf_cabinet.M, Tf_correction.p + PyKDL.Vector(R*math.cos(alpha), R*math.sin(alpha), 0)))
+        wrist_traj.append( PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, -alpha - math.pi/2 -0.45*math.pi/4), PyKDL.Vector(0, 0, 0)) )
+
+    return traj, wrist_traj
+
+
+def calculate_points(Tf_cabinet):
+    '''
+    Function calculates 3 points of opening door trajectory.
+    '''
+    traj = []
+    wrist_traj = []
+    tool_org_tf = velma.getTf("B", "Tr")
+    traj.append(Tf_cabinet * PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, math.pi), PyKDL.Vector(1, 0.05, 0)))
+    traj.append(Tf_cabinet * PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, math.pi), PyKDL.Vector(1, 0.7, 0)))
+    traj.append(Tf_cabinet * PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, math.pi), PyKDL.Vector(0.45, 1.2, 0))) #0.75 -2
+    wrist_traj.append(PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, -math.pi/9), PyKDL.Vector(0, 0, 0)))
+    wrist_traj.append(PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, -math.pi/3), PyKDL.Vector(0, 0, 0)))
+    wrist_traj.append(PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, -math.pi/2), PyKDL.Vector(0, 0, 0)))
+    return traj, wrist_traj
+
+
+def recovery():
+    '''
+    Function used in case of PATH TOLERANCE error.
+    '''
+    print "Starting recovery.."
+    switch_to_jnt_imp()
+    switch_to_cart_imp()
+    set_lower_impedance()
+    print "po"
+ 
+   
+# K=40 N/m
+# F_max = 7.2N
+# tol = F_max/K = 0.18m
+def move_right_wrist(tf_dest, time, tol=0.18):
     '''
     Function moves robot's right wrist to given transform.
     '''
-    print "Moving right wrist to pose defined in world frame..."
-    if not velma.moveCartImpRight([tf_dest], [3.0], None, None, None, None, PyKDL.Wrench(PyKDL.Vector(5,5,5), PyKDL.Vector(5,5,5), start_time=0.5,
-	damping = PyKDL.Wrench(PyKDL.Vector(0.1, 0.1, 1), PyKDL.Vector(0.1, 0.1, 1)), 
-        path_tol = PyKDL.Twist(PyKDL.RPY(0.2, 0.2, 0.2), PyKDL.Vector(0.5, 0.5, 0.1))):
+    print "Moving right wrist to pose defined in world frame.."
+    if not velma.moveCartImpRight(tf_dest, time, None, None, None, None, PyKDL.Wrench(PyKDL.Vector(5, 5, 5), PyKDL.Vector(5, 5, 5)), start_time=0.5, path_tol=PyKDL.Twist(PyKDL.Vector(tol, tol, 1), PyKDL.Vector(1, 1, 1))):
         exitError(13)
-    if velma.waitForEffectorRight() != 0:
+    error = velma.waitForEffectorRight()
+    if error != 0 and error != -3: 
         exitError(14)
+    if error == -3: #PATH_TOLERANCE_VIOLATED
+        recovery()
+
     rospy.sleep(0.5)
-    print "Calculating difference between desiread and reached pose..."
-    T_B_T_diff = PyKDL.diff(tf_dest, velma.getTf("B", "Tr"), 1.0)
-    print T_B_T_diff
-    print T_B_T_diff.vel.Norm()
-    print T_B_T_diff.rot.Norm()
-    if T_B_T_diff.vel.Norm() > 0.2 or T_B_T_diff.rot.Norm() > 0.2:
-        exitError(15)
+
+def move_right_tool(tf_dest, tf_wrist, time, tol=0.20):
+    '''
+    Function moves robot's right wrist to given transform.
+    '''
+    print "Moving right wrist to pose defined in world frame.."
+    if not velma.moveCartImpRight(tf_dest, time, tf_wrist, time, None, None, PyKDL.Wrench(PyKDL.Vector(5, 5, 5), PyKDL.Vector(5, 5, 5)), start_time=0.5, path_tol=PyKDL.Twist(PyKDL.Vector(tol, tol, 1), PyKDL.Vector(1, 1, 1))):
+        exitError(13)
+    error = velma.waitForEffectorRight()
+    if error != 0 and error != -3: 
+        exitError(14)
+    if error == -3: #PATH_TOLERANCE_VIOLATED
+        recovery()
+
+    rospy.sleep(0.5)
 
 
 def calculate_tf_dest(Tf_object, correction):
@@ -198,14 +281,12 @@ def calculate_base_angle(Tf_object):
     Function calculates destination base angle.
     '''
     alpha = math.atan2(Tf_object.p[1], Tf_object.p[0])
-    #alpha -= 0.5*math.pi
     if (- 0.45*math.pi > alpha):
         alpha =  -0.45*math.pi
     elif (0.45*math.pi < alpha):
         alpha =  0.45*math.pi
 
     q_map_goal["torso_0_joint"] = alpha
-    print alpha
 
 
 if __name__ == "__main__":
@@ -217,6 +298,10 @@ if __name__ == "__main__":
     velma.waitForInit()
     Tf_table = velma.getTf("B", "table")
     Tf_cabinet = velma.getTf("B", "cabinet")
+    translation_tf = PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, math.pi), PyKDL.Vector(0, 0.2, 0.12))
+    Tf_cabinet_right = Tf_cabinet * translation_tf
+
+    traj = calculate_trajectory(Tf_cabinet)
 
     # Initialize robot
     initialize_velma()
@@ -224,47 +309,45 @@ if __name__ == "__main__":
     switch_to_jnt_imp()
  
     # Set robot to it's starting position
-    move_left_fingers(close=False)
-    move_right_fingers(close=True)
+    move_right_fingers(0.58*math.pi)
+    move_left_fingers(close=True)
     calculate_base_angle(Tf_table)
     plan_and_move(q_map_goal)
-    # move_right_fingers(close=False)
     rospy.sleep(1)
 
-    # Move robot's wrist to the object
     switch_to_cart_imp()
     tool_org_tf = velma.getTf("B", "Tr")
-    tf_dest = calculate_tf_dest(Tf_cabinet, PyKDL.Vector(0, 0, 0.7*0.6))
-    move_right_wrist(tf_dest)
-    exitError(0)
-    # Pick up the object
-    move_right_fingers(close=True, check=False)
-    move_right_wrist(tool_org_tf)
-    # Check, if the object was picked
-    if isHandConfigurationClose(velma.getHandRightCurrentConfiguration(), [0.6*math.pi, 0.6*math.pi, 0.6*math.pi, 0]):
-        print "Object was not picked."
-        exitError(16)
+    set_lower_impedance()
+    move_right_wrist([PyKDL.Frame(Tf_cabinet_right.M, tool_org_tf.p + PyKDL.Vector(0, 0, 0.14))], [3])
 
-    rospy.sleep(0.5)
+    # Move robot's wrist to the door
+    move_right_wrist([Tf_cabinet_right], [12], 0.25)
 
-    # Move to the second starting position - above the second table
+    # Move robot's wrist to the handle
+    tool_org_tf = velma.getTf("B", "Tr")
+    translation_tf = PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, 0), PyKDL.Vector(0.1, 0.4, 0))
+    move_tf = tool_org_tf * translation_tf
+    move_right_wrist([move_tf], [12], 0.12)
+
+    # Open the cabinet's door
+    traj, wrist_traj = calculate_points(Tf_cabinet)
+    
+    print "MOVE 1"
+    move_right_tool([traj[0]], [wrist_traj[0]], [9], 0.2)
+    print "MOVE 2"
+    move_right_tool([traj[1]], [wrist_traj[1]], [9], 0.2)
+    print "MOVE 3"
+    move_right_tool([traj[2]], [wrist_traj[2]], [9], 0.2)
+
+    # Leave the handle
+    move_right_fingers(0.66*math.pi)
+    tool_org_tf = velma.getTf("B", "Tr")
+    move_right_wrist([tool_org_tf * PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, 0), PyKDL.Vector(0, -0.2, 0))], [6], 0.20)
+    tool_org_tf = velma.getTf("B", "Tr")
+    move_right_wrist([tool_org_tf * PyKDL.Frame(PyKDL.Rotation.RPY(0, 0, 0), PyKDL.Vector(-0.1, 0, 0))], [6], 0.12)
+
+    # Move to the end position
     switch_to_jnt_imp()
-
-    # Put down the object
-    calculate_base_angle(Tf_table2)
-    plan_and_move(q_map_goal)
-    switch_to_cart_imp()
-    tool_org_tf = velma.getTf("B", "Tr")
-    tf_dest = calculate_tf_dest(Tf_table2, PyKDL.Vector(0, 0, 0.15))
-
-    # Move wrist back to the ending position
-    move_right_wrist(tf_dest)
-    move_right_fingers(close=False)
-
-    move_right_wrist(tool_org_tf)
-
-    rospy.sleep(0.5)
-    #if not isHandConfigurationClose( velma.getHandRightCurrentConfiguration(), dest_q):
-    #    exitError(9)
-
-#end plan
+    plan_and_move(q_map_finish)
+    exitError(0)
+    

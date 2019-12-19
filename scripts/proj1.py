@@ -19,12 +19,24 @@ y = 0
 x = 0.5
 y = -0.4
 z = 1
+<<<<<<< HEAD
 q_map_goal = {'torso_0_joint':0, 'right_arm_0_joint':1.1, 'right_arm_1_joint':-1.3,
     'right_arm_2_joint':1.45, 'right_arm_3_joint':1.4, 'right_arm_4_joint':1.1, 'right_arm_5_joint':-1.2,
     'right_arm_6_joint':-0.5, 'left_arm_0_joint':0.3, 'left_arm_1_joint':1.8, 'left_arm_2_joint':-1.25,
     'left_arm_3_joint':-0.85, 'left_arm_4_joint':0, 'left_arm_5_joint':0.5, 'left_arm_6_joint':0 }
 
 
+=======
+q_map_goal = {'torso_0_joint':0, 'right_arm_0_joint':1, 'right_arm_1_joint':-1.3,
+    'right_arm_2_joint':1, 'right_arm_3_joint':1, 'right_arm_4_joint':1.1, 'right_arm_5_joint':-1.6,
+    'right_arm_6_joint':0, 'left_arm_0_joint':0.3, 'left_arm_1_joint':1.8, 'left_arm_2_joint':-1.25,
+    'left_arm_3_joint':-0.85, 'left_arm_4_joint':0, 'left_arm_5_joint':0.5, 'left_arm_6_joint':0 }
+q_map_goal_2 = {'torso_0_joint':-1.5, 'right_arm_0_joint':1, 'right_arm_1_joint':-1.1,
+    'right_arm_2_joint':1, 'right_arm_3_joint':1.2, 'right_arm_4_joint':1.1, 'right_arm_5_joint':-1.6,
+    'right_arm_6_joint':0, 'left_arm_0_joint':0.3, 'left_arm_1_joint':1.8, 'left_arm_2_joint':-1.25,
+    'left_arm_3_joint':-0.85, 'left_arm_4_joint':0, 'left_arm_5_joint':0.5, 'left_arm_6_joint':0 }
+
+>>>>>>> 2dfdefb2b55f06769a67c317b447077048d159e6
 
 def initialize_velma():
     '''
@@ -128,12 +140,17 @@ def move_right_fingers(close, check=True):
     if velma.waitForHandRight() != 0:
         exitError(8)
     rospy.sleep(0.5)
+<<<<<<< HEAD
     if check:
         if not isHandConfigurationClose(velma.getHandRightCurrentConfiguration(), dest_q):
             exitError(9)
     else:
         if isHandConfigurationClose(velma.getHandRightCurrentConfiguration(), dest_q):
             exitError(10)
+=======
+    if check and not isHandConfigurationClose(velma.getHandRightCurrentConfiguration(), dest_q):
+        exitError(9)
+>>>>>>> 2dfdefb2b55f06769a67c317b447077048d159e6
 
 
 def plan_and_move(q_map_goal):
@@ -152,7 +169,11 @@ def plan_and_move(q_map_goal):
             continue
         print "Executing trajectory..."
         if not velma.moveJointTraj(traj, start_time=0.5, position_tol=10.0/180.0 * math.pi, velocity_tol=10.0/180.0*math.pi):
+<<<<<<< HEAD
             exitError(11)
+=======
+            exitError(10)
+>>>>>>> 2dfdefb2b55f06769a67c317b447077048d159e6
         if velma.waitForJoint() == 0:
             break
         else:
@@ -162,18 +183,28 @@ def plan_and_move(q_map_goal):
     rospy.sleep(0.5)
     js = velma.getLastJointState()
     if not isConfigurationClose(q_map_goal, js[1]):
+<<<<<<< HEAD
         exitError(12)
 
 
+=======
+        exitError(11)
+
+
+>>>>>>> 2dfdefb2b55f06769a67c317b447077048d159e6
 def move_right_wrist(tf_dest):
     '''
     Function moves robot's right wrist to given transform.
     '''
     print "Moving right wrist to pose defined in world frame..."
     if not velma.moveCartImpRight([tf_dest], [3.0], None, None, None, None, PyKDL.Wrench(PyKDL.Vector(5,5,5), PyKDL.Vector(5,5,5)), start_time=0.5):
+<<<<<<< HEAD
         exitError(13)
+=======
+        exitError(12)
+>>>>>>> 2dfdefb2b55f06769a67c317b447077048d159e6
     if velma.waitForEffectorRight() != 0:
-        exitError(14)
+        exitError(13)
     rospy.sleep(0.5)
     print "Calculating difference between desiread and reached pose..."
     T_B_T_diff = PyKDL.diff(tf_dest, velma.getTf("B", "Tr"), 1.0)
@@ -181,7 +212,11 @@ def move_right_wrist(tf_dest):
     print T_B_T_diff.vel.Norm()
     print T_B_T_diff.rot.Norm()
     if T_B_T_diff.vel.Norm() > 0.2 or T_B_T_diff.rot.Norm() > 0.2:
+<<<<<<< HEAD
         exitError(15)
+=======
+        exitError(14)
+>>>>>>> 2dfdefb2b55f06769a67c317b447077048d159e6
 
 
 def calculate_tf_dest(Tf_object, correction):
@@ -198,6 +233,7 @@ def calculate_tf_dest(Tf_object, correction):
     return PyKDL.Frame(PyKDL.Rotation.RPY(0.0, 0.0, alpha), tool_tf.p+tf_diff.vel+correction)
 
 
+<<<<<<< HEAD
 def calculate_base_angle(Tf_object):
     '''
     Function calculates destination base angle.
@@ -274,6 +310,62 @@ if __name__ == "__main__":
     move_right_wrist(tool_org_tf)
 
     rospy.sleep(0.5)
+=======
+if __name__ == "__main__":
+    rospy.init_node('lab1_2')
+    rospy.sleep(0.5)
+
+    # Get object's and tables' transforms
+    velma = VelmaInterface()
+    velma.waitForInit()
+    Tf_object1 = velma.getTf("B", "object1")
+    Tf_table1 = velma.getTf("B", "table1")
+    Tf_table2 = velma.getTf("B", "table2")
+    Tf_table2.p[1] += 0.2
+    Tf_table2.p[2] = 1.19
+
+    # Initialize robot
+    initialize_velma()
+    initialize_planner()
+    switch_to_jnt_imp()
+ 
+    # Set robot to it's starting position
+    move_left_fingers(close=True)
+    move_right_fingers(close=True)
+    plan_and_move(q_map_goal)
+    move_right_fingers(close=False)
+
+    rospy.sleep(1)
+
+    # Move robot's wrist to the object
+    switch_to_cart_imp()
+    tool_org_tf = velma.getTf("B", "Tr")
+    tf_dest = calculate_tf_dest(Tf_object1, PyKDL.Vector(0, 0, 0.1))
+    move_right_wrist(tf_dest)
+
+    # Pick up the object
+    move_right_fingers(close=True, check=False)
+    move_right_wrist(tool_org_tf)
+
+    rospy.sleep(0.5)
+
+    # Move to the second starting position - above the second table
+    switch_to_jnt_imp()
+
+    # Put down the object
+    plan_and_move(q_map_goal_2)
+    switch_to_cart_imp()
+    tool_org_tf = velma.getTf("B", "Tr")
+    tf_dest = calculate_tf_dest(Tf_table2, PyKDL.Vector(0, 0, 0.15))
+
+    # Move wrist back to the ending position
+    move_right_wrist(tf_dest)
+    move_right_fingers(close=False)
+
+    move_right_wrist(tool_org_tf)
+
+    rospy.sleep(0.5)
+>>>>>>> 2dfdefb2b55f06769a67c317b447077048d159e6
     #if not isHandConfigurationClose( velma.getHandRightCurrentConfiguration(), dest_q):
     #    exitError(9)
 
