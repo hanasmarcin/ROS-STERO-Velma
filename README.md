@@ -1,4 +1,4 @@
-# velma_STERO-19Z-Szczepanik-Hanas
+# ROS STERO Velma
 Project made in the Robot Control and Simulation classes, using ROS and C++.
 It consisted of one laboratory task and two projects:
 - _Laboratory 1_ - ROS node **moving robot's end effector** in a circular motion (with circle's position and orientation as variables)
